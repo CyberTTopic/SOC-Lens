@@ -1,0 +1,15 @@
+{
+  "name": "soc-lens",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Análisis de logs de seguridad en el navegador",
+  "scripts": {
+    "vendor": "node scripts/fetch-vendor.js",
+    "vendor:verify": "node scripts/fetch-vendor.js --verify",
+    "test": "node tests/run-all.js index.html"
+  },
+  "devDependencies": {
+    "jsdom": "^24.1.0"
+  },
+  "engines": { "node": ">=18" }
+}

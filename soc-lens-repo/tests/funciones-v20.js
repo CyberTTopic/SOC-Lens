@@ -1,0 +1,40 @@
+const { JSDOM, VirtualConsole } = require('jsdom');
+const fs = require('fs');
+const html = fs.readFileSync(process.argv[2], 'utf8');
+const errors = []; const results = [];
+const vc = new VirtualConsole(); vc.on('jsdomError', e => errors.push('jsdomError: ' + (e.message || e))); vc.on('error', e => errors.push('console.error: ' + e));
+const stubChart = function(){ this.destroy=()=>{}; this.toBase64Image=()=>'data:image/png;base64,AA=='; this.update=()=>{}; }; stubChart.getChart=()=>null; stubChart.defaults={plugins:{},scales:{},color:'',borderColor:'',font:{}};
+const ctx = new Proxy({}, {get:(t,k)=>(k in t?t[k]:()=>({width:10}))});
+const dom = new JSDOM(html.replace(/<script src="(https:\/\/cdnjs|vendor\/)[^"]+"><\/script>/g,''), { url:'http://localhost/', runScripts:'dangerously', pretendToBeVisual:true, virtualConsole:vc,
+  beforeParse(win){
+    win.XLSX={read:()=>({}),utils:{sheet_to_json:()=>[]},SSF:{}}; win.Chart=stubChart;
+    win.jspdf={jsPDF:function(){return new Proxy({},{get:(t,k)=>k==='internal'?{pageSize:{getWidth:()=>210,getHeight:()=>297}}:k==='splitTextToSize'?(x)=>[String(x)]:k==='getNumberOfPages'?()=>1:(()=>{})})}};
+    win.alert=()=>{}; win.confirm=()=>true; win.scrollTo=()=>{};
+    win.matchMedia=()=>({matches:false,addListener(){},addEventListener(){},removeListener(){},removeEventListener(){}});
+    win.requestAnimationFrame=cb=>setTimeout(cb,0); win.HTMLCanvasElement.prototype.getContext=()=>ctx; win.HTMLCanvasElement.prototype.toDataURL=()=>'data:image/png;base64,AA==';
+    win.URL.createObjectURL=()=>'blob:x'; win.URL.revokeObjectURL=()=>{}; win.HTMLAnchorElement.prototype.click=function(){};
+  }});
+const w=dom.window,d=w.document; const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const check=(n,ok,x='')=>results.push((ok?'PASS ':'FAIL ')+n+(x?' — '+x:''));
+(async()=>{
+  await wait(300); await w.loadDemo(); await wait(600);
+  const es = w.buildWordHtml();
+  check('por defecto el informe está en español', es.includes('lang="es"') && es.includes('1. Resumen ejecutivo') && es.includes('Uso interno'));
+  w.showTab('ajustes'); await wait(200);
+  const sel = d.getElementById('xtIdioma');
+  check('la plantilla ofrece Español e English', !!sel && [...sel.options].map(o=>o.value).join(',')==='es,en');
+  sel.value='en'; sel.dispatchEvent(new w.Event('change',{bubbles:true})); await wait(80);
+  check('el selector guarda el idioma', w.tplGet().idioma==='en');
+  const en = w.buildWordHtml();
+  check('el Word en inglés usa títulos en inglés', en.includes('lang="en"') && en.includes('1. Executive summary') && en.includes('Internal use only') && !en.includes('Resumen ejecutivo'));
+  check('el Word en inglés ya no avisa que el contenido está en español', !en.includes('generated in Spanish'));
+  check('las fases y los niveles salen en inglés', en.includes('Containment') && (/\[(Critical|High|Medium|Low)\]/.test(en)));
+  const hoja = w.hojaDirectivosHtml();
+  check('la hoja en inglés tiene sus etiquetas', hoja.includes('Summary for management') && hoja.includes('Main findings') && hoja.includes('What to do now') && hoja.includes('Who decides'));
+  check('la hoja en inglés traduce el nivel de riesgo', /Risk level: (Critical|High|Medium|Low|No findings)/.test(hoja));
+  sel.value='es'; sel.dispatchEvent(new w.Event('change',{bubbles:true})); await wait(80);
+  check('volver al español restaura las etiquetas', w.buildWordHtml().includes('1. Resumen ejecutivo') && w.hojaDirectivosHtml().includes('Resumen para dirección'));
+  console.log(results.join('\n'));
+  console.log('ERRORES: '+(errors.length? errors.slice(0,6).join(' | ') : 'ninguno'));
+  process.exit(0);
+})().catch(e=>{ console.log('EXCEPCIÓN: '+e.message); console.log(results.join('\n')); process.exit(1); });
