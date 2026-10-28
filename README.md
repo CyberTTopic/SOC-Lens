@@ -1,26 +1,39 @@
 # SOC Lens
 
-Plataforma de correlación de logs para análisis SOC Nivel 2. Es una aplicación de una sola página (HTML, CSS y JavaScript) que se ejecuta en el navegador, sin instalación ni servidor.
+Análisis de logs de seguridad en el navegador. Carga un Excel o CSV exportado de tu SIEM, detecta patrones de ataque, agrupa los hallazgos en incidentes y genera informes.
 
-## Funciones
+## Privacidad
 
-- Carga de archivos .xlsx, .xls o .csv exportados de un SIEM
-- Detección de fuerza bruta, inicios sospechosos, escalamiento, comandos y procesos, movimiento lateral y anomalías
-- Agrupación de hallazgos en incidentes por usuario, IP y equipo
-- Mapeo a MITRE ATT&CK y cadena de ataque
-- Grafo de relaciones, explorador de logs y mapa de calor
-- Extracción de IoC y cola de triage
-- Exportación a PDF, CSV y JSON
-- Asistente de IA opcional (requiere API key de Anthropic)
+Los datos se procesan dentro del navegador de quien usa la herramienta. Nada se envía a un servidor, salvo que actives el asistente de IA (envía fragmentos del análisis a la API que elijas) o los enlaces de consulta de IOC (VirusTotal, AbuseIPDB, Shodan).
+
+**Nunca subas al repositorio archivos de logs, casos exportados, informes ni claves de API.** El `.gitignore` ayuda, pero la revisión es tuya.
 
 ## Uso
 
-1. Abre `index.html` en Chrome o Edge.
-2. Pulsa **Usar demo** para probar con datos sintéticos, o carga tu archivo.
-3. Verifica el mapeo de columnas y pulsa **Analizar y correlacionar**.
+1. Descarga el `.zip` de la última versión desde *Releases* y descomprímelo. Debe contener `index.html` y la carpeta `vendor/`: la app necesita ambos.
+2. Ábrelo en Edge o Chrome. Pulsa **Usar demo** para probarla con datos sintéticos.
 
-Requiere conexión a internet para cargar SheetJS, Chart.js y jsPDF desde cdnjs.
+## Desarrollo
 
-## Aviso
+    npm install
+    npm run vendor      # descarga las librerías a vendor/ (una vez)
+    npm test            # ejecuta las pruebas
 
-Los hallazgos son indicadores que deben validarse en los registros originales. Los umbrales son valores de partida y deben ajustarse al entorno. No subas logs reales ni datos de clientes a este repositorio.
+Antes de publicar, `vendor/` debe estar commiteado en el repositorio: el flujo de Release lo comprueba.
+
+## Publicar una versión
+
+Crea una etiqueta con el formato `v1.0.0`. El flujo de GitHub Actions ejecuta las pruebas y, si pasan, publica un `.zip` con `index.html` y `vendor/`, junto con los hashes SHA-256. Quien descargue el archivo puede comparar el hash del `.zip` con `SHA256SUMS.txt` para confirmar que no fue modificado.
+
+    git tag v1.0.0
+    git push origin v1.0.0
+
+## Limitaciones
+
+- Los hallazgos son indicadores que deben validarse contra los registros originales.
+- Los umbrales de detección son valores de partida, ajustables en Ajustes.
+- Algunos textos de los hallazgos individuales se generan en español aunque el informe esté en inglés.
+
+## Licencia
+
+Pendiente de definir.
