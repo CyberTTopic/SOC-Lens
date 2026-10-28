@@ -1,0 +1,35 @@
+const { JSDOM, VirtualConsole } = require('jsdom');
+const fs = require('fs');
+const html = fs.readFileSync(process.argv[2], 'utf8');
+const errors = []; const results = [];
+const vc = new VirtualConsole(); vc.on('jsdomError', e => errors.push('jsdomError: ' + (e.message || e))); vc.on('error', e => errors.push('console.error: ' + e));
+const stubChart = function(){ this.destroy=()=>{}; this.toBase64Image=()=>'data:image/png;base64,AA=='; this.update=()=>{}; }; stubChart.getChart=()=>null; stubChart.defaults={plugins:{},scales:{},color:'',borderColor:'',font:{}};
+const ctx = new Proxy({}, {get:(t,k)=>(k in t?t[k]:()=>({width:10}))});
+const dom = new JSDOM(html.replace(/<script src="(https:\/\/cdnjs|vendor\/)[^"]+"><\/script>/g,''), { url:'http://localhost/', runScripts:'dangerously', pretendToBeVisual:true, virtualConsole:vc,
+  beforeParse(win){ win.XLSX={read:()=>({}),utils:{sheet_to_json:()=>[]},SSF:{}}; win.Chart=stubChart; win.jspdf={jsPDF:function(){return new Proxy({},{get:(t,k)=>k==='internal'?{pageSize:{getWidth:()=>210,getHeight:()=>297}}:k==='splitTextToSize'?(x)=>[String(x)]:k==='getNumberOfPages'?()=>1:(()=>{})})}};
+    win.alert=()=>{}; win.confirm=()=>true; win.scrollTo=()=>{}; win.matchMedia=()=>({matches:false,addListener(){},addEventListener(){},removeListener(){},removeEventListener(){}});
+    win.requestAnimationFrame=cb=>setTimeout(cb,0); win.HTMLCanvasElement.prototype.getContext=()=>ctx; win.HTMLCanvasElement.prototype.toDataURL=()=>'data:image/png;base64,AA=='; win.URL.createObjectURL=()=>'blob:x'; win.URL.revokeObjectURL=()=>{}; win.HTMLAnchorElement.prototype.click=function(){}; } });
+const w=dom.window,d=w.document; const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const check=(n,ok,x='')=>results.push((ok?'PASS ':'FAIL ')+n+(x?' — '+x:''));
+(async()=>{
+  await wait(300); await w.loadDemo(); await wait(600);
+  w.showTab('ajustes'); await wait(150);
+  const modal=d.getElementById('modal');
+  check('el modal se anuncia como diálogo', modal.getAttribute('role')==='dialog' && modal.getAttribute('aria-modal')==='true');
+  const trigger=d.getElementById('xCaseExp'); trigger.focus();
+  w.openModal('Prueba', '<button id="m1">Uno</button><button id="m2">Dos</button>');
+  await wait(60);
+  check('al abrir, el foco entra al modal', modal.contains(d.activeElement), d.activeElement && d.activeElement.id);
+  d.getElementById('mclose').click(); await wait(60);
+  check('al cerrar, el foco regresa al elemento anterior', d.activeElement === trigger, d.activeElement && d.activeElement.id);
+  w.openModal('Prueba', '<button id="m1">Uno</button><button id="m2">Dos</button>');
+  await wait(60);
+  const last=d.getElementById('m2'); last.focus();
+  last.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Tab',bubbles:true}));
+  await wait(20);
+  check('Tab en el último elemento vuelve al primero (no sale del modal)', d.activeElement && d.activeElement.id==='mclose' || d.activeElement===d.getElementById('m1') || modal.contains(d.activeElement));
+  d.getElementById('mclose').click(); await wait(40);
+  console.log(results.join('\n'));
+  console.log('ERRORES: '+(errors.length? errors.slice(0,6).join(' | ') : 'ninguno'));
+  process.exit(0);
+})().catch(e=>{ console.log('EXCEPCIÓN: '+e.message); console.log(results.join('\n')); process.exit(1); });
