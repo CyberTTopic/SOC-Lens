@@ -31,7 +31,7 @@ Crea una etiqueta con el formato `v1.0.0`. El flujo de GitHub Actions ejecuta la
 ## Limitaciones
 
 - Los hallazgos son indicadores que deben validarse contra los registros originales.
-- Los umbrales de detección son valores de partida, ajustables en Ajustes.
+- Los umbrales de detección y los plazos del triage son valores de partida, ajustables en Ajustes. Puedes exportar esa configuración y tus reglas a un archivo JSON para compartirlas con tu equipo; el archivo no incluye casos, listas de cuentas ni la plantilla.
 - Algunos textos de los hallazgos individuales se generan en español aunque el informe esté en inglés.
 
 ## Licencia
