@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.mistral.ai https://api.deepseek.com https://openrouter.ai; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.mistral.ai https://api.deepseek.com https://openrouter.ai; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
 <meta name="description" content="SOC Lens: analiza exportaciones de SIEM en el navegador, correlaciona hallazgos, prioriza incidentes y genera un informe técnico.">
@@ -10,9 +10,9 @@
 <meta name="theme-color" content="#070c17">
 <title>SOC Lens · Correlación de logs</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23070c17'/%3E%3Ccircle cx='28' cy='28' r='13' fill='none' stroke='%2322d3ee' stroke-width='5'/%3E%3Cpath d='M38 38l12 12' stroke='%238b5cf6' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
-<script src="vendor/xlsx.full.min.js"></script>
-<script src="vendor/chart.umd.min.js"></script>
-<script src="vendor/jspdf.umd.min.js"></script>
+
+
+
 <style>
   :root{
     color-scheme:dark;
@@ -441,6 +441,15 @@
   @media (prefers-reduced-motion:reduce){
     *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
   }
+
+  /* v30: lectura: tamaño de texto y alto contraste */
+  html.txt-grande{zoom:1.15}
+  html.txt-muy-grande{zoom:1.35}
+  body.alto-contraste{--bg:#000000;--bg2:#000000;--panel:#000000;--panel2:#000000;--line:#ffffff;--line2:#ffffff;--txt:#ffffff;--mut:#f1f5f9;--dim:#e2e8f0;--cy:#7dd3fc;--vi:#c4b5fd;--crit:#ff6b8a;--alto:#ffa45c;--medio:#fde047;--bajo:#86efac;--input:#000000;--hover:#ffffff26;--chip:#ffffff1a;--shadow:none}
+  body.alto-contraste{background:#000!important}
+  body.light.alto-contraste{--bg:#ffffff;--bg2:#ffffff;--panel:#ffffff;--panel2:#ffffff;--line:#000000;--line2:#000000;--txt:#000000;--mut:#111827;--dim:#1f2937;--cy:#005f73;--vi:#4c1d95;--crit:#9f1239;--alto:#9a3412;--medio:#854d0e;--bajo:#166534;--input:#ffffff;--hover:#00000026;--chip:#0000001a;--shadow:none}
+  body.light.alto-contraste{background:#ffffff!important}
+  body.alto-contraste :focus-visible{outline:3px solid #ffff00!important;outline-offset:2px}
 </style>
 <style>
 .hoja{font-size:12px;line-height:1.45;background:#fff;color:#0f172a;padding:14px;border-radius:12px}
@@ -448,7 +457,8 @@
 .hoja-top{display:flex;justify-content:space-between;font-size:11px;color:#475569}
 .hoja-riesgo{border-left:5px solid #eab308;padding:6px 10px;background:#fef9c3;margin:8px 0}
 .hoja-riesgo.Crítico{border-color:#f43f5e;background:#ffe4e6}.hoja-riesgo.Alto{border-color:#f97316;background:#ffedd5}
-.hoja-h{border-bottom:1px solid #e2e8f0;padding:4px 0}.hoja-foot{margin-top:10px;font-size:10px;color:#64748b}
+.hoja-h{border-bottom:1px solid #e2e8f0;padding:4px 0}.hoja-graficas{display:flex;gap:12px;margin:8px 0}.hoja-graficas>div{flex:1;min-width:0}.hoja-graficas b{font-size:11px}
+.hoja-foot{margin-top:10px;font-size:10px;color:#64748b}
 @media print{body *{visibility:hidden!important}#hojaDir,#hojaDir *{visibility:visible!important}#hojaDir{position:absolute;left:0;top:0;width:100%;padding:10mm;box-sizing:border-box}@page{size:A4;margin:10mm}}
 </style>
 </head>
@@ -684,7 +694,7 @@
       <div class="toolbar">
         <div><h2 style="margin:0">Indicadores de compromiso</h2><p class="muted" style="margin:4px 0 0">Extraídos solo de eventos con hallazgo. Los enlaces abren servicios externos; se pueden mostrar “desactivados” (defang).</p></div>
         <div class="filters">
-          <input id="iocQ" placeholder="Filtrar valores…" style="min-width:200px">
+          <input id="iocQ" aria-label="Buscar en indicadores de compromiso" placeholder="Filtrar valores…" style="min-width:200px">
           <label class="field" style="flex-direction:row;align-items:center;gap:6px;padding-bottom:8px"><input type="checkbox" id="iocDefang" style="width:auto"> Defang</label>
           <label class="field" style="flex-direction:row;align-items:center;gap:6px;padding-bottom:8px"><input type="checkbox" id="iocExt" style="width:auto"> Solo IP externas</label>
           <button class="ghost" id="iocCsv" type="button">⬇ CSV</button>
@@ -713,7 +723,7 @@
         <select id="triBulk" aria-label="Estado para la selección"><option>Nuevo</option><option>En investigación</option><option>Confirmado</option><option>Falso positivo</option><option>Cerrado</option></select>
         <button class="ghost" id="triApply" type="button">Aplicar</button>
       </div>
-      <div class="table-wrap"><table><caption class="sr-only">Hallazgos para triage</caption><thead><tr><th scope="col" style="width:30px"></th><th scope="col">ID</th><th scope="col">Criticidad</th><th scope="col">Hallazgo</th><th scope="col">Estado</th><th scope="col">Nota del analista</th><th scope="col"></th></tr></thead><tbody id="triBody"></tbody></table></div>
+      <div class="table-wrap"><table><caption class="sr-only">Hallazgos para triage</caption><thead><tr><th scope="col" style="width:30px"></th><th scope="col">ID</th><th scope="col">Criticidad</th><th scope="col">Hallazgo</th><th scope="col">Estado</th><th scope="col">Nota del analista</th><th scope="col">Responsable</th><th scope="col">Plazo</th><th scope="col"></th></tr></thead><tbody id="triBody"></tbody></table></div>
       <div style="text-align:center;margin-top:10px"><button class="ghost" id="triMore" type="button" hidden>Mostrar más hallazgos</button></div>
     </div>
   </section>
@@ -814,7 +824,15 @@
       <div class="row" style="margin-top:10px;justify-content:flex-start"><button class="ghost danger" id="btnClearStore" type="button">Borrar datos guardados del caso</button></div>
       <div id="depsInfo" class="muted" style="margin-top:12px"></div>
     </div>
-    <div id="extrasAjustes"></div>
+    <div class="card" style="margin-bottom:12px"><h3>Lectura</h3>
+  <label class="field"><span>Tamaño del texto</span><select id="uiTexto"><option value="normal">Normal</option><option value="grande">Grande</option><option value="muy">Muy grande</option></select></label>
+  <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="uiContraste" style="width:auto"> Alto contraste</label>
+</div>
+<div class="card" style="margin-bottom:12px"><h3>Configuración compartida</h3>
+  <p class="muted small">Exporta umbrales y reglas para usarlos en otro equipo o compartirlos con tu grupo. No incluye casos, listas de cuentas ni la plantilla.</p>
+  <div class="row start"><button class="btn sm" id="cfgExp" type="button">⬇ Exportar configuración</button><button class="ghost sm" id="cfgImpBtn" type="button">⬆ Importar configuración</button><input type="file" id="cfgImpFile" accept=".json,application/json" hidden></div>
+</div>
+<div id="extrasAjustes"></div>
   </section>
 
   <footer class="footer">
@@ -823,7 +841,7 @@
   </footer>
 </main>
 
-<div id="modal" hidden>
+<div id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mbody">
   <div class="backdrop" data-close="1"></div>
   <div class="box" role="dialog" aria-modal="true" aria-labelledby="mTitle" tabindex="-1">
     <div class="modal-head"><h2 id="mTitle"></h2><button class="ghost modal-close" id="mclose" type="button" aria-label="Cerrar">✕</button></div>
@@ -840,6 +858,43 @@
   </div>
 </div>
 
+<script>
+/* Cargador de librerías: vendor/ primero; si falla, jsDelivr (mismos archivos de npm, verificados con SRI). */
+const LIBS = [
+  { name: 'XLSX', check: () => typeof XLSX !== 'undefined', sources: [
+      { src: 'vendor/xlsx.full.min.js' },
+      { src: 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js', integrity: 'sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw' } ] },
+  { name: 'Chart.js', check: () => typeof Chart !== 'undefined', sources: [
+      { src: 'vendor/chart.umd.min.js' },
+      { src: 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js', integrity: 'sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG' } ] },
+  { name: 'jsPDF', check: () => !!(window.jspdf && window.jspdf.jsPDF), sources: [
+      { src: 'vendor/jspdf.umd.min.js' },
+      { src: 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js', integrity: 'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk' } ] }
+];
+function cargarScript(src, integrity) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('script');
+    el.src = src; el.async = false;
+    if (integrity) { el.integrity = integrity; el.crossOrigin = 'anonymous'; }
+    el.onload = () => resolve();
+    el.onerror = () => reject(new Error(src));
+    document.head.appendChild(el);
+  });
+}
+const LIB_RESULTS = {};
+const LIBS_READY = (async () => {
+  for (const lib of LIBS) {
+    if (lib.check()) { LIB_RESULTS[lib.name] = 'ya cargada'; continue; }
+    LIB_RESULTS[lib.name] = 'no cargada';
+    for (const fuente of lib.sources) {
+      try { await cargarScript(fuente.src, fuente.integrity); if (lib.check()) { LIB_RESULTS[lib.name] = fuente.integrity ? 'desde jsDelivr (verificada)' : 'desde vendor/'; break; } }
+      catch (_) { /* siguiente fuente */ }
+    }
+  }
+  window.LIB_RESULTS = LIB_RESULTS;
+  return LIB_RESULTS;
+})();
+</script>
 <script>
 'use strict';
 /* =========================================================
@@ -1045,6 +1100,7 @@ function closeModal() {
 
 /* ---------- configuración y catálogos ---------- */
 const DEFAULT_CFG = Object.freeze({
+  perfilMinHoras: 3, perfilMinInicios: 3, perfilMinHorasHorario: 12, plazoCritico: 4, plazoAlto: 24, plazoMedio: 168, plazoBajo: 720,
   ventanaFuerzaBruta: 10, umbralFallos: 5, umbralFallosAlto: 20,
   horaInicio: 7, horaFin: 20, umbralCuentasIP: 3,
   umbralHosts: 3, umbralHostsAlto: 5, factorAnomalia: 2, minEventosAnomalia: 10,
@@ -1064,9 +1120,16 @@ const CFG_META = [
   { key: 'minEventosIP', label: 'Eventos mínimos por IP', min: 10, max: 5000, group: 'Detección', help: 'Piso para actividad repetida de una IP.' },
   { key: 'factorIP', label: 'Factor de IP repetida', min: 1.2, max: 20, group: 'Detección', help: 'Veces por encima del promedio entre IP.' },
   { key: 'ventanaCorrelacion', label: 'Ventana de correlación (min)', min: 5, max: 1440, group: 'Correlación', help: 'Máximo de separación para unir hallazgos.' },
-  { key: 'maxEvidencias', label: 'Máximo de evidencias por hallazgo', min: 50, max: 2000, group: 'Rendimiento', help: 'Se muestran y guardan como muestra; el conteo total se conserva.' }
+  { key: 'maxEvidencias', label: 'Máximo de evidencias por hallazgo', min: 50, max: 2000, group: 'Rendimiento', help: 'Se muestran y guardan como muestra; el conteo total se conserva.' },
+  { key: 'perfilMinHoras', label: 'Horas de historial para la línea base', min: 1, max: 500, group: 'Línea base', help: 'Horas distintas con inicios de sesión antes de comparar una cuenta.' },
+  { key: 'perfilMinInicios', label: 'Inicios de sesión mínimos en el historial', min: 1, max: 1000, group: 'Línea base', help: 'Inicios de sesión que debe tener el historial para comparar.' },
+  { key: 'perfilMinHorasHorario', label: 'Historial para alertar por hora inusual', min: 1, max: 500, group: 'Línea base', help: 'Horas de historial necesarias para marcar una hora nunca usada.' },
+  { key: 'plazoCritico', label: 'Plazo para Crítico (horas)', min: 1, max: 8760, group: 'Triage', help: 'Tiempo máximo abierto antes de marcar vencido.' },
+  { key: 'plazoAlto', label: 'Plazo para Alto (horas)', min: 1, max: 8760, group: 'Triage', help: 'Tiempo máximo abierto antes de marcar vencido.' },
+  { key: 'plazoMedio', label: 'Plazo para Medio (horas)', min: 1, max: 8760, group: 'Triage', help: 'Tiempo máximo abierto antes de marcar vencido.' },
+  { key: 'plazoBajo', label: 'Plazo para Bajo (horas)', min: 1, max: 8760, group: 'Triage', help: 'Tiempo máximo abierto antes de marcar vencido.' }
 ];
-const CFG_GROUPS = ['Detección', 'Horario', 'Correlación', 'Rendimiento'];
+const CFG_GROUPS = ['Detección', 'Horario', 'Correlación', 'Rendimiento', 'Línea base', 'Triage'];
 function sanitizeCfg(src) {
   const out = { ...DEFAULT_CFG };
   CFG_META.forEach((m) => {
@@ -1283,13 +1346,13 @@ function libStatus() {
 }
 function checkLibs() {
   const s = libStatus(); const miss = [];
-  if (!s.xlsx) miss.push('XLSX');
-  if (!s.chart) miss.push('Chart.js');
-  if (!s.pdf) miss.push('jsPDF');
+  if (!s.xlsx) miss.push('XLSX (lectura de Excel)');
+  if (!s.chart) miss.push('Chart.js (gráficas)');
+  if (!s.pdf) miss.push('jsPDF (exportar PDF)');
   const el = $('libWarn');
-  if (!miss.length) { el.hidden = true; return; }
+  if (!miss.length) { el.hidden = true; el.textContent = ''; return; }
   el.hidden = false;
-  el.textContent = `No se pudieron cargar: ${miss.join(', ')}. Revisa la conexión o descarga las librerías. Sin XLSX no se pueden leer archivos; sin Chart.js no se ven gráficos; sin jsPDF no se exporta PDF.`;
+  el.textContent = `No se pudieron cargar: ${miss.join(', ')}. Qué hacer: (1) en el zip de la Release o en el repositorio, la carpeta vendor/ debe estar junto a index.html; (2) si usas el archivo suelto, colócalo dentro de la carpeta del proyecto; (3) revisa tu conexión: la app también intentó jsDelivr; si una red o antivirus bloquea esos dominios, prueba desde otra red.`;
 }
 function headerHits(row) {
   let hits = 0; const seen = new Set();
@@ -1806,7 +1869,7 @@ function detectAnomalies(timed) {
   const perUserHour = new Map();
   valid.forEach((e) => {
     if (!e.user) return;
-    const hk = fmt(e.ts).slice(0, 13);
+    const hk = ((e.ts.getFullYear() * 100 + e.ts.getMonth() + 1) * 100 + e.ts.getDate()) * 100 + e.ts.getHours();
     if (!perUserHour.has(e.user)) perUserHour.set(e.user, new Map());
     const m = perUserHour.get(e.user);
     if (!m.has(hk)) m.set(hk, []);
@@ -1820,7 +1883,7 @@ function detectAnomalies(timed) {
     if (!mean) return;
     hours.forEach((list, hk) => {
       if (list.length >= CFG.minEventosAnomalia && list.length >= CFG.factorAnomalia * mean) {
-        cands.push({ u, hk, list, mean, ratio: list.length / mean });
+        cands.push({ u, hk, hkLabel: fmt(list[0].ts).slice(0, 13), list, mean, ratio: list.length / mean });
       }
     });
   });
@@ -1828,7 +1891,7 @@ function detectAnomalies(timed) {
     out.push(mkFinding({
       cat: 'Otras anomalías', tactic: 'Other', mitre: [], sev: 'Medio',
       title: `Volumen anómalo de eventos: ${c.u}`,
-      desc: `${c.list.length} eventos en la hora ${c.hk}:00, frente a un promedio de ${c.mean.toFixed(1)} por hora (${c.ratio.toFixed(1)}×).`,
+      desc: `${c.list.length} eventos en la hora ${c.hkLabel}:00, frente a un promedio de ${c.mean.toFixed(1)} por hora (${c.ratio.toFixed(1)}×).`,
       justification: `El volumen supera ${CFG.factorAnomalia} veces el promedio de la cuenta. Puede deberse a un proceso automatizado legítimo.`,
       accion: 'Revisar qué acciones se realizaron en esa hora y si corresponden a un proceso programado.'
     }, c.list));
@@ -1851,12 +1914,12 @@ function detectAnomalies(timed) {
   valid.forEach((e) => {
     const h = e.ts.getHours();
     if (h >= CFG.horaInicio && h < CFG.horaFin) return;
-    const hk = fmt(e.ts).slice(0, 13);
+    const hk = ((e.ts.getFullYear() * 100 + e.ts.getMonth() + 1) * 100 + e.ts.getDate()) * 100 + e.ts.getHours();
     if (!off.has(hk)) off.set(hk, []);
     off.get(hk).push(e);
   });
   const hourly = new Map();
-  valid.forEach((e) => { const hk = fmt(e.ts).slice(0, 13); hourly.set(hk, (hourly.get(hk) || 0) + 1); });
+  valid.forEach((e) => { const hk = ((e.ts.getFullYear() * 100 + e.ts.getMonth() + 1) * 100 + e.ts.getDate()) * 100 + e.ts.getHours(); hourly.set(hk, (hourly.get(hk) || 0) + 1); });
   const mH = hourly.size ? [...hourly.values()].reduce((a, b) => a + b, 0) / hourly.size : 0;
   const peaks = [...off.entries()].filter(([, l]) => l.length >= CFG.minEventosAnomalia && l.length >= CFG.factorAnomalia * mH)
     .sort((a, b) => b[1].length - a[1].length).slice(0, 5);
@@ -1865,7 +1928,7 @@ function detectAnomalies(timed) {
     out.push(mkFinding({
       cat: 'Otras anomalías', tactic: 'Other', mitre: [], sev: 'Medio', standalone: true,
       title: `Picos de actividad fuera de horario (${peaks.length} hora${peaks.length === 1 ? '' : 's'})`,
-      desc: peaks.map(([hk, l]) => `${hk}:00 → ${l.length} eventos`).join(' · ') + `. Promedio general: ${mH.toFixed(1)} eventos por hora.`,
+      desc: peaks.map(([, l]) => `${fmt(l[0].ts).slice(0, 13)}:00 → ${l.length} eventos`).join(' · ') + `. Promedio general: ${mH.toFixed(1)} eventos por hora.`,
       justification: 'Actividad concentrada fuera del horario laboral. Puede ser mantenimiento, respaldos programados o un incidente.',
       accion: 'Revisar qué cuentas y equipos participaron y si había una ventana de mantenimiento aprobada.'
     }, all));
@@ -2082,7 +2145,14 @@ async function analyze({ goDash = false } = {}) {
   showLoading('Analizando registros', `Normalizando ${fmtN(RAW.length)} fila(s)…`);
   await tick(30);
   try {
-    EVT = RAW.map((r, i) => normalize(r, i));
+    EVT = new Array(RAW.length);
+    const CHUNK = 4000;
+    for (let s0 = 0; s0 < RAW.length; s0 += CHUNK) {
+      const end = Math.min(RAW.length, s0 + CHUNK);
+      for (let i = s0; i < end; i++) EVT[i] = normalize(RAW[i], i);
+      setLoading('Normalizando registros', `${fmtN(end)} de ${fmtN(RAW.length)} filas…`);
+      await tick(0);
+    }
     computeIgnored();
     ACTIVE = EVT.filter((e) => !e.ignored);
     TIMED = ACTIVE.filter((e) => !e.aprox).sort((a, b) => a.ts - b.ts);
@@ -2092,10 +2162,13 @@ async function analyze({ goDash = false } = {}) {
     await tick(0);
     rawF.push(...detectEscalation(ACTIVE), ...detectCommands(ACTIVE));
     await tick(0);
-    rawF.push(...detectLateral(TIMED), ...detectAnomalies(TIMED));
+    rawF.push(...detectLateral(TIMED));
     await tick(0);
-    rawF.push(...detectBeacon(ACTIVE), ...detectExfil(TIMED), ...detectCustom(ACTIVE), ...detectAuditEvents(ACTIVE));
+    rawF.push(...detectAnomalies(TIMED));
+    await tick(0);
+    rawF.push(...detectBeacon(ACTIVE), ...detectExfil(TIMED), ...detectCustom(ACTIVE), ...detectAuditEvents(ACTIVE), ...detectPatrones(ACTIVE));
     FINDINGS = finalizeFindings(rawF);
+    sellarDeteccion();
     buildFlags();
     buildRisk();
     IOC = buildIOC();
@@ -3888,8 +3961,10 @@ function renderTriage() {
       <td>${esc(f.title)}<div class="muted small">${esc(f.cat)} · ${esc(f.mitre.join(', ') || '—')} · ${fmtN(f.evidenceTotal)} ev.</div></td>
       <td><select data-tkey="${esc(f.key)}" aria-label="Estado de ${f.id}">${ESTADOS.map((s) => `<option ${s === t.estado ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
       <td><input data-nkey="${esc(f.key)}" value="${esc(t.nota || '')}" placeholder="Nota…" style="width:230px" aria-label="Nota de ${f.id}"></td>
+      <td><input data-resp="${esc(f.key)}" value="${esc(t.responsable || '')}" placeholder="Responsable…" style="width:150px" aria-label="Responsable de ${f.id}"></td>
+      <td data-plazo="${esc(f.key)}">${plazoHtml(f, t)}</td>
       <td><button class="ghost sm" type="button" data-explain="${f.id}">🤖 Explicar</button> <button class="ghost sm" type="button" data-fkey="${esc(f.key)}">Ver</button></td></tr>`;
-  }).join('') || '<tr><td colspan="7">Sin hallazgos para este filtro.</td></tr>';
+  }).join('') || '<tr><td colspan="9">Sin hallazgos para este filtro.</td></tr>';
   const more = $('triMore'); more.hidden = list.length <= triFilter.limit; more.textContent = `Mostrar más (${Math.max(0, list.length - triFilter.limit)} restantes)`;
   $('triAll').checked = false;
   dirty.delete('triage');
@@ -5465,14 +5540,16 @@ function bindEvents() {
     const st = $('triBulk').value;
     const mot = esCierre(st) ? pedirMotivo(st) : '';
     if (esCierre(st) && !mot) { toast('El cierre requiere un motivo. No se aplicó ningún cambio.', 'warn', 6000); return; }
-    triChecked.forEach((k) => { TRI[k] = { ...(TRI[k] || {}), estado: st, ...(mot ? { motivo: mot } : {}) }; });
+    triChecked.forEach((k) => { TRI[k] = { ...(TRI[k] || {}), estado: st, ...(mot ? { motivo: mot } : {}) }; marcarTiempos(k); });
     auditLog('Estado de triage (masivo)', triChecked.size + ' hallazgo(s) → ' + st + (mot ? ' (motivo: ' + mot + ')' : ''));
     saveTriageSoon(); triChecked.clear(); markDirty('dash', 'inc', 'triage', 'ent', 'rep'); renderTriage(); updateSideStats();
     toast(`${st}: actualizados`, 'ok');
   };
   $('triBody').addEventListener('change', (e) => {
     const t = e.target.closest('[data-tkey]');
-    if (t) { const prevE = (TRI[t.dataset.tkey] || {}).estado || 'Nuevo'; const mot = pedirMotivo(t.value); if (esCierre(t.value) && !mot) { t.value = prevE; return; } auditLog('Estado de triage', findingLabel(t.dataset.tkey) + ' → ' + t.value + (mot ? ' (motivo: ' + mot + ')' : '')); TRI[t.dataset.tkey] = { ...(TRI[t.dataset.tkey] || {}), estado: t.value, ...(mot ? { motivo: mot } : {}) }; saveTriageSoon(); markDirty('dash', 'inc', 'ent', 'rep'); updateSideStats(); if (triFilter.status) renderTriage(); else updateTriageCounts(); return; }
+    if (t) { const prevE = (TRI[t.dataset.tkey] || {}).estado || 'Nuevo'; const mot = pedirMotivo(t.value); if (esCierre(t.value) && !mot) { t.value = prevE; return; } auditLog('Estado de triage', findingLabel(t.dataset.tkey) + ' → ' + t.value + (mot ? ' (motivo: ' + mot + ')' : '')); TRI[t.dataset.tkey] = { ...(TRI[t.dataset.tkey] || {}), estado: t.value, ...(mot ? { motivo: mot } : {}) }; marcarTiempos(t.dataset.tkey); actualizarPlazo(t.dataset.tkey); saveTriageSoon(); markDirty('dash', 'inc', 'ent', 'rep'); updateSideStats(); if (triFilter.status) renderTriage(); else updateTriageCounts(); return; }
+    const rsp = e.target.closest('[data-resp]');
+    if (rsp) { const k = rsp.dataset.resp; const v = rsp.value.trim(); const t0 = TRI[k] || {}; TRI[k] = { ...t0, responsable: v, ...(v && !t0.asignado ? { asignado: new Date().toISOString() } : {}) }; if (!v) delete TRI[k].asignado; saveTriageSoon(); renderTriage(); return; }
     const c = e.target.closest('[data-check]');
     if (c) { if (c.checked) triChecked.add(c.dataset.check); else triChecked.delete(c.dataset.check); }
   });
@@ -5992,6 +6069,7 @@ function buildWordHtml(){
   p.push(`<p><b>${e(L.ent)}:</b> ${e(ent)}<br><b>${e(L.fuente)}:</b> ${e(srcName || '—')}<br><b>${e(L.gen)}:</b> ${e(fmt(new Date()))}<br><b>${e(L.clas)}:</b> ${e(L.uso)}</p>`);
   if (lang === 'en' && L.nota) p.push(`<p><i>${e(L.nota)}</i></p>`);
   if (s.resumen) p.push(`<h2>${e(L.res)}</h2><p>${e(iaResumen || (EN ? execSummaryTextEn() : resumenBase()))}</p>`);
+  if (s.resumen) p.push(`<h2>${e(EN ? 'Response times' : 'Tiempos de respuesta')}</h2>${tiemposResumen(lang)}`);
   if (s.graficas) {
     const imgs = [sevConfig, topConfig, trendConfig].map((f) => { try { return chartPng(f()); } catch (_) { return null; } }).filter((u) => u && /^data:image\//.test(u));
     if (imgs.length) p.push(`<h2>${e(L.graf)}</h2>` + imgs.map((u) => `<p><img src="${u}" style="width:600px"></p>`).join(''));
@@ -6015,6 +6093,7 @@ function hojaDirectivosHtml(){
     <div class="hoja-top"><b>${e(L.dirTit)} · ${e(L.uso)}</b><span>${e(fmt(new Date()))}</span></div>
     <h1>${e(top ? (EN ? incidentTitleEn(top) : plainIncidentTitle(top)) : (EN ? 'No incidents' : 'Sin incidentes'))}</h1>
     <div class="hoja-riesgo ${e(r.general)}"><b>${e(L.nivel)}: ${e(L.sevs[r.general] || r.general)}.</b> ${e(nivel)}</div>
+    ${graficasHoja(lang)}
     <h3>${e(L.que)}</h3><p>${e(EN ? execSummaryTextEn() : execSummaryText())}</p>
     <h3>${e(L.hacer)}</h3><ol>${(EN ? remediacionEn(top || {findings:[],hasSuccess:false,sev:'Bajo'}).contener : pa.now).slice(0, 3).map((x) => `<li>${e(x)}</li>`).join('')}</ol>
     <h3>${e(L.princ)}</h3>
@@ -6054,9 +6133,9 @@ function renderExtras(){
       </div>
       <h4>Condiciones (todas deben cumplirse)</h4>
       ${xDraft.conds.map((c, i) => `<div class="row start" style="margin-bottom:6px">
-        <select data-xc="${i}" data-xf="field">${Object.entries(RULE_FIELDS).map(([v,l]) => `<option value="${v}" ${v===c.field?'selected':''}>${l}</option>`).join('')}</select>
-        <select data-xc="${i}" data-xf="op">${Object.entries(RULE_OPS).map(([v,l]) => `<option value="${v}" ${v===c.op?'selected':''}>${l}</option>`).join('')}</select>
-        <input data-xc="${i}" data-xf="value" value="${e_(c.value)}" placeholder="valor">
+        <select data-xc="${i}" data-xf="field" aria-label="Campo de la condición ${i + 1}">${Object.entries(RULE_FIELDS).map(([v,l]) => `<option value="${v}" ${v===c.field?'selected':''}>${l}</option>`).join('')}</select>
+        <select data-xc="${i}" data-xf="op" aria-label="Operador de la condición ${i + 1}">${Object.entries(RULE_OPS).map(([v,l]) => `<option value="${v}" ${v===c.op?'selected':''}>${l}</option>`).join('')}</select>
+        <input data-xc="${i}" data-xf="value" value="${e_(c.value)}" placeholder="valor" aria-label="Valor de la condición ${i + 1}">
         <button class="ghost sm" data-xdel="${i}" type="button">Quitar</button></div>`).join('')}
       <div class="row start"><button class="ghost sm" id="xrAddC" type="button">+ Condición</button><button class="btn sm" id="xrSave" type="button">Guardar regla y re-analizar</button></div>
       <h4>Reglas guardadas (${rules.length})</h4>
@@ -6284,6 +6363,22 @@ async function caseExport(){
   renderExtras();
 }
 function atajosActivos(){ return ['dash','inc','grafo','explo','ent','mitre','ioc','triage','rep']; }
+let lastFocusBeforeModal = null;
+function bindFocoModal(){
+  const m = $('modal'); if (!m || m.dataset.foco) return; m.dataset.foco = '1';
+  const focusables = () => [...m.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((x) => !x.disabled && (x.offsetParent !== null || x === document.activeElement));
+  new MutationObserver(() => {
+    if (m.hidden) { if (lastFocusBeforeModal && lastFocusBeforeModal.focus) lastFocusBeforeModal.focus(); }
+    else { lastFocusBeforeModal = document.activeElement; const f = focusables(); if (f.length) f[0].focus(); }
+  }).observe(m, { attributes: true, attributeFilter: ['hidden'] });
+  m.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Tab') return;
+    const f = focusables(); if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+    else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
+  });
+}
 function bindAtajos(){
   if (document.body.dataset.atajos) return;
   document.body.dataset.atajos = '1';
@@ -6409,6 +6504,7 @@ function findingEn(f){
     'Comandos y procesos': { title: f.title, desc: `${n} event(s) match the pattern. Hosts: ${hosts}.`, just: 'The command line matches a pattern linked to this technique. It is an indicator, not a confirmation; it may be legitimate administration.', acc: f.accion || 'Review the full command line and the parent process.' },
     'Movimiento lateral': { title: `Sessions across several hosts in one hour`, desc: `${n} event(s) across ${hosts}.`, just: 'One account with sessions on several hosts in a short time may indicate lateral movement, or legitimate administration or a service account.', acc: 'Validate whether the user administers those hosts; if not, review the origin of the first session.' },
     'Otras anomalías': { title: f.title && /IP/.test(f.title) ? `Repeated activity from ${ip}` : (f.title && /fuera de horario/.test(f.title) ? 'Activity peak outside business hours' : 'Abnormal event volume for an account'), desc: `${n} event(s) flagged against the baseline.`, just: 'Behavior exceeds the normal pattern. It may be a legitimate automated process.', acc: 'Review the actions in that period and whether they match a scheduled process.' },
+    'Patrón de uso inusual': { title: f.title, desc: `${n} sign-in(s) outside the account's usual pattern.`, just: 'The account does not normally use that host or hour. It may be a change of role or an attacker using stolen credentials; confirm it with the user.', acc: 'Confirm with the user or manager whether that host or hour was used. If not, reset the password and review the host.' },
     'Regla personalizada': { title: f.title, desc: `${n} event(s) matched the rule.`, just: 'Matches the conditions defined by the analyst.', acc: f.accion || 'Review the matched events.' },
     'Comportamiento periódico': { title: `Periodic activity from ${ip}`, desc: `${n} event(s) at regular intervals. Accounts: ${users}.`, just: 'Regular intervals may be a scheduled task or monitoring, or a program that checks in with a controller (beaconing). The evidence is indicative.', acc: 'Confirm whether a scheduled task or monitoring agent exists for that source.' },
     'Posible exfiltración': { title: f.title, desc: `${n} access, copy or download event(s) that day.`, just: 'Far more file access than the account usually shows. It may be a legitimate backup; it is compared against that account\'s own baseline.', acc: 'Confirm with the user why the files were accessed and where they were copied.' },
@@ -6421,9 +6517,199 @@ function findingEn(f){
   return { title: t.title, desc: t.desc, justification: t.just, accion: t.acc };
 }
 
+/* ---------- v27: línea base medida en horas (mínimo 3 horas y 3 inicios de sesión) ---------- */
+const horaKey = (d) => fmt(d).slice(0, 13);
+const PERFIL_MAX_HORAS = 2000;     // horas guardadas por cuenta
+function perfilGet(){ const p = lsGet('perfil', {}); return p && typeof p === 'object' && !Array.isArray(p) ? p : {}; }
+function detectPatrones(list){
+  const out = [];
+  const valid = list.filter((e) => e.user && e.ts && !e.aprox && e.isOk);
+  if (!valid.length) return out;
+  const P = perfilGet();
+  const curHoras = new Set(valid.map((e) => horaKey(e.ts)));
+  const byUser = {};
+  valid.forEach((e) => { (byUser[e.user] = byUser[e.user] || []).push(e); });
+  Object.entries(byUser).forEach(([user, evs]) => {
+    const H = P[user] || {};
+    // historial: solo horas de archivos anteriores (excluye las del archivo actual, así es idempotente)
+    const prev = Object.keys(H).filter((k) => !curHoras.has(k));
+    const inicios = prev.reduce((a, k) => a + (H[k].n || 0), 0);
+    if (prev.length >= CFG.perfilMinHoras && inicios >= CFG.perfilMinInicios) {
+      const knownHosts = new Set(); const usedHour = Array(24).fill(false);
+      prev.forEach((k) => { (H[k].h || []).forEach((x) => knownHosts.add(x)); usedHour[+k.slice(11, 13)] = true; });
+      const newHost = evs.filter((e) => e.host && !knownHosts.has(e.host));
+      const oddHour = prev.length >= CFG.perfilMinHorasHorario ? evs.filter((e) => !usedHour[e.ts.getHours()]) : [];
+      const equipos = [...new Set(newHost.map((e) => e.host))].slice(0, 5).join(', ');
+      if (newHost.length) out.push(mkFinding({
+        cat: 'Patrón de uso inusual', tactic: 'Initial Access', mitre: ['T1078'], sev: oddHour.length ? 'Alto' : 'Medio',
+        title: `Cuenta ${user} en equipo no habitual`,
+        desc: `${newHost.length} inicio(s) en equipo(s) que la cuenta no usó en ${prev.length} hora(s) de historial: ${equipos}.${oddHour.length ? ` ${oddHour.length} de ellos a una hora en la que la cuenta nunca había iniciado sesión.` : ''}`,
+        justification: 'La cuenta suele usar otros equipos. Puede tratarse de un cambio de puesto o de una sesión de un atacante con credenciales robadas; debe confirmarse con el usuario.',
+        accion: 'Confirmar con el usuario o su gerente si usó ese equipo. Si no lo reconoce, cambiar la contraseña y revisar el equipo.'
+      }, newHost));
+      else if (oddHour.length) out.push(mkFinding({
+        cat: 'Patrón de uso inusual', tactic: 'Initial Access', mitre: ['T1078'], sev: 'Medio',
+        title: `Inicio de sesión a una hora inusual para ${user}`,
+        desc: `${oddHour.length} inicio(s) a horas en las que la cuenta no había iniciado sesión en ${prev.length} hora(s) de historial.`,
+        justification: 'La cuenta no tiene actividad histórica a esa hora. Puede ser un turno nuevo o un acceso no autorizado.',
+        accion: 'Confirmar con el usuario si ese horario es habitual para su trabajo.'
+      }, oddHour));
+    }
+    // Actualizar el historial con las horas de este archivo (sobrescribe si se analiza de nuevo)
+    const byHour = {};
+    evs.forEach((e) => {
+      const k = horaKey(e.ts);
+      const b = byHour[k] || (byHour[k] = { n: 0, h: new Set() });
+      b.n++; if (e.host) b.h.add(e.host);
+    });
+    Object.entries(byHour).forEach(([k, b]) => { H[k] = { n: b.n, h: [...b.h].slice(0, 50) }; });
+    const keep = Object.keys(H).sort().slice(-PERFIL_MAX_HORAS);
+    const trimmed = {}; keep.forEach((k) => { trimmed[k] = H[k]; });
+    P[user] = trimmed;
+  });
+  lsSet('perfil', P);
+  return out;
+}
+
+/* ---------- v28: triage con tiempos y responsable ---------- */
+function plazosH(){ return { 'Crítico': CFG.plazoCritico, 'Alto': CFG.plazoAlto, 'Medio': CFG.plazoMedio, 'Bajo': CFG.plazoBajo }; }
+function sellarDeteccion(){
+  const now = new Date().toISOString(); let cambio = false;
+  FINDINGS.forEach((f) => {
+    const t = TRI[f.key];
+    if (!t || !t.detectado) { TRI[f.key] = { ...(t || {}), detectado: now }; cambio = true; }
+  });
+  if (cambio) saveTriageSoon();
+}
+function marcarTiempos(key){
+  const t = TRI[key]; if (!t) return;
+  if (CERRADOS.includes(t.estado)) { if (!t.cerrado) t.cerrado = new Date().toISOString(); }
+  else delete t.cerrado;
+}
+function fmtDur(ms){
+  const h = ms / 3600000;
+  if (h < 1) return Math.max(1, Math.round(ms / 60000)) + ' min';
+  if (h < 48) return Math.round(h) + ' h';
+  return Math.round(h / 24) + ' días';
+}
+function plazoHtml(f, t){
+  if (CERRADOS.includes(t.estado || 'Nuevo')) {
+    const dur = t.cerrado && t.detectado ? new Date(t.cerrado) - new Date(t.detectado) : null;
+    return `<span class="muted small">${dur != null ? 'Cerrado en ' + fmtDur(dur) : 'Cerrado'}</span>`;
+  }
+  if (!t.detectado) return '<span class="muted small">—</span>';
+  const restante = plazosH()[f.sev] * 3600000 - (Date.now() - new Date(t.detectado));
+  return restante >= 0
+    ? `<span class="badge">Vence en ${fmtDur(restante)}</span>`
+    : `<span class="badge ${f.sev}"><b>Vencido hace ${fmtDur(-restante)}</b></span>`;
+}
+function actualizarPlazo(key){
+  const f = FINDINGS.find((x) => x.key === key); const cel = document.querySelector(`[data-plazo="${String(key).replace(/"/g, '\\"')}"]`);
+  if (f && cel) cel.innerHTML = plazoHtml(f, TRI[key] || {});
+}
+function tiemposResumen(lang){
+  const EN = lang === 'en';
+  const filas = ['Crítico', 'Alto', 'Medio', 'Bajo'].map((sev) => {
+    const cerrados = FINDINGS.filter((f) => f.sev === sev && CERRADOS.includes(estadoFinding(f.key)) && TRI[f.key] && TRI[f.key].cerrado && TRI[f.key].detectado);
+    const durs = cerrados.map((f) => new Date(TRI[f.key].cerrado) - new Date(TRI[f.key].detectado));
+    const prom = durs.length ? durs.reduce((a, b) => a + b, 0) / durs.length : null;
+    const vencidos = FINDINGS.filter((f) => f.sev === sev && !CERRADOS.includes(estadoFinding(f.key)) && TRI[f.key] && TRI[f.key].detectado && (Date.now() - new Date(TRI[f.key].detectado)) > plazosH()[sev] * 3600000).length;
+    return `<tr><td>${sev}</td><td>${plazosH()[sev]} h</td><td>${cerrados.length}</td><td>${prom != null ? fmtDur(prom) : '—'}</td><td>${vencidos}</td></tr>`;
+  }).join('');
+  const cab = EN ? ['Severity', 'Target', 'Closed', 'Average time to close', 'Overdue now'] : ['Criticidad', 'Plazo', 'Cerrados', 'Tiempo promedio de cierre', 'Vencidos ahora'];
+  return `<table border="1" cellspacing="0" cellpadding="4"><tr>${cab.map((c) => `<th>${esc(c)}</th>`).join('')}</tr>${filas}</table>`;
+}
+
+/* ---------- v29: gráficas en la hoja para directivos (SVG en línea: no dependen de librerías) ---------- */
+function svgBarras(items, etiquetaResumen){
+  const W = 300, H = 120, pad = 18;
+  if (!items.length || items.every((i) => !i.value)) return '<p class="muted small">—</p>';
+  const max = Math.max(1, ...items.map((i) => i.value));
+  const bw = (W - pad * 2) / items.length;
+  const bars = items.map((it, i) => {
+    const h = (H - pad - 16) * it.value / max;
+    const x = pad + i * bw + bw * 0.15, w = bw * 0.7, y = H - pad - h;
+    const lab = it.label ? `<text x="${(x + w / 2).toFixed(1)}" y="${H - 4}" font-size="9" text-anchor="middle" fill="#334155">${esc(it.label)}</text>` : '';
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" fill="${it.color}"/>`
+      + `<text x="${(x + w / 2).toFixed(1)}" y="${(y - 3).toFixed(1)}" font-size="10" text-anchor="middle" fill="#0f172a">${it.value}</text>${lab}`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(etiquetaResumen)}">${bars}</svg>`;
+}
+function graficasHoja(lang){
+  const EN = lang === 'en', L = TX(lang);
+  const sevs = ['Crítico', 'Alto', 'Medio', 'Bajo'];
+  const colores = { 'Crítico': '#f43f5e', 'Alto': '#f97316', 'Medio': '#eab308', 'Bajo': '#22c55e' };
+  const cuenta = sevs.map((sv) => ({ label: L.sevs[sv] || sv, value: FINDINGS.filter((f) => f.sev === sv).length, color: colores[sv] }));
+  const resumenSev = (EN ? 'Findings by severity: ' : 'Hallazgos por criticidad: ') + cuenta.map((c) => `${c.label} ${c.value}`).join(', ');
+  const porDia = new Map();
+  TIMED.forEach((e) => { if (!e.ts || e.aprox) return; const k = fmt(e.ts).slice(0, 10); porDia.set(k, (porDia.get(k) || 0) + 1); });
+  const dias = [...porDia.keys()].sort().slice(-30);
+  const items = dias.map((k, i) => ({ label: (i === 0 || i === dias.length - 1 || i % 5 === 0) ? k.slice(5) : '', value: porDia.get(k), color: '#38bdf8' }));
+  const resumenDia = (EN ? 'Events per day: ' : 'Eventos por día: ') + (dias.length ? dias.map((k) => `${k.slice(5)} ${porDia.get(k)}`).join(', ') : (EN ? 'no data' : 'sin datos'));
+  return `<div class="hoja-graficas">
+    <div><b>${esc(EN ? 'Findings by severity' : 'Hallazgos por criticidad')}</b>${svgBarras(cuenta, resumenSev)}</div>
+    <div><b>${esc(EN ? 'Events per day (last 30 days)' : 'Eventos por día (últimos 30 días)')}</b>${svgBarras(items, resumenDia)}</div>
+  </div>`;
+}
+
+/* ---------- v30: tamaño de texto y alto contraste ---------- */
+function uiGet(){
+  const u = lsGet('ui', {}) || {};
+  return { texto: ['normal', 'grande', 'muy'].includes(u.texto) ? u.texto : 'normal', contraste: !!u.contraste };
+}
+function uiAplicar(){
+  const u = uiGet(), h = document.documentElement;
+  h.classList.toggle('txt-grande', u.texto === 'grande');
+  h.classList.toggle('txt-muy-grande', u.texto === 'muy');
+  document.body.classList.toggle('alto-contraste', u.contraste);
+}
+function bindUI(){
+  uiAplicar();
+  const sel = $('uiTexto'), chk = $('uiContraste');
+  if (!sel || !chk || sel.dataset.bound) return;
+  sel.dataset.bound = '1';
+  const u = uiGet(); sel.value = u.texto; chk.checked = u.contraste;
+  sel.onchange = () => { lsSet('ui', { ...uiGet(), texto: sel.value }); uiAplicar(); };
+  chk.onchange = () => { lsSet('ui', { ...uiGet(), contraste: chk.checked }); uiAplicar(); };
+}
+
+/* ---------- v31: exportar e importar configuración (sin datos de casos ni listas de cuentas) ---------- */
+function cfgExport(){
+  const pick = {}; CFG_META.forEach((m) => { pick[m.key] = CFG[m.key]; });
+  const data = { formato: 'soc-lens-config', version: 1, generado: new Date().toISOString(), cfg: pick, reglas: rulesGet() };
+  download('soc-lens-configuracion.json', JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
+  toast('Configuración exportada. No incluye casos, listas de cuentas ni la plantilla.', 'ok', 6000);
+}
+async function cfgImport(file){
+  if (!file) return;
+  let data;
+  try {
+    const txt = typeof file.text === 'function' ? await file.text() : await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsText(file); });
+    data = JSON.parse(txt);
+  } catch (_) { toast('El archivo no es una configuración válida (JSON).', 'warn', 6000); return; }
+  if (!data || data.formato !== 'soc-lens-config' || typeof data.cfg !== 'object') { toast('Formato de configuración no reconocido.', 'warn', 6000); return; }
+  CFG = sanitizeCfg(data.cfg);
+  lsSet('config', CFG);
+  const reglas = Array.isArray(data.reglas) ? data.reglas.filter((r) => r && Array.isArray(r.conds)) : [];
+  rulesSet(reglas);
+  markDirty('ajustes', 'dash');
+  toast(`Configuración importada: ${reglas.length} regla(s).`, 'ok', 6000);
+  if (RAW.length) analyze({ goDash: false });
+}
+
+function bindCfgCompartida(){
+  const b = $('cfgExp'), i = $('cfgImpFile'), ib = $('cfgImpBtn');
+  if (!b || b.dataset.bound) return; b.dataset.bound = '1';
+  b.onclick = cfgExport;
+  ib.onclick = () => i.click();
+  i.onchange = (e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) cfgImport(f); };
+}
 function init() {
   bindV18();
   bindAtajos();
+  bindFocoModal();
+  bindUI();
+  bindCfgCompartida();
   ALLOW = lsGet('allow', { users: [], ips: [], hosts: [] }) || { users: [], ips: [], hosts: [] };
   ALLOW.users = Array.isArray(ALLOW.users) ? ALLOW.users : [];
   ALLOW.ips = Array.isArray(ALLOW.ips) ? ALLOW.ips : [];
@@ -6449,8 +6735,8 @@ function init() {
   if (h && ['inicio', 'ia', 'ajustes'].includes(h)) showTab(h); else showTab('inicio');
   if (!libStatus().xlsx) toast('XLSX no se cargó: revisa la conexión a internet antes de importar archivos.', 'err', 9000);
 }
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-else init();
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => LIBS_READY.then(init));
+else LIBS_READY.then(init);
 
 </script>
 </body>
